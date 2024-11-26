@@ -507,20 +507,22 @@ class AuthErrorUtils {
   }
 
   static func blockingCloudFunctionServerResponse(message: String?) -> Error {
-    guard let message else {
-      return error(code: .blockingCloudFunctionError, message: message)
-    }
-    var jsonString = message.replacingOccurrences(
-      of: "HTTP Cloud Function returned an error:",
-      with: ""
-    )
-    jsonString = jsonString.trimmingCharacters(in: .whitespaces)
-    let jsonData = jsonString.data(using: .utf8) ?? Data()
     do {
-      let jsonDict = try JSONSerialization
-        .jsonObject(with: jsonData, options: []) as? [String: Any] ?? [:]
-      let errorDict = jsonDict["error"] as? [String: Any] ?? [:]
-      let errorMessage = errorDict["message"] as? String
+      guard let message = message,
+        let match = try NSRegularExpression(pattern: "\\{.*\\}", options: .dotMatchesLineSeparators)
+          .firstMatch(
+            in: message,
+            range: NSRange(message.startIndex..., in: message)
+          ),
+        let range = Range(match.range, in: message)
+      else {
+        return error(code: .blockingCloudFunctionError, message: nil)
+      }
+
+      let jsonData = String(message[range]).data(using: .utf8) ?? Data()
+      let jsonDict: [String: Any]? = try JSONSerialization
+        .jsonObject(with: jsonData) as? [String: Any]
+      let errorMessage = (jsonDict?["error"] as? [String: Any])?["message"] as? String
       return error(code: .blockingCloudFunctionError, message: errorMessage)
     } catch {
       return JSONSerializationError(underlyingError: error)

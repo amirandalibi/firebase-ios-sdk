@@ -312,9 +312,10 @@ class AuthBackend: AuthBackendProtocol {
                                   errorDictionary: [String: Any],
                                   response: AuthRPCResponse,
                                   error: Error?) -> Error? {
-    let split = serverErrorMessage.split(separator: ":")
-    let shortErrorMessage = split.first?.trimmingCharacters(in: .whitespacesAndNewlines)
-    let serverDetailErrorMessage = String(split.count > 1 ? split[1] : "")
+    let splitIndex = serverErrorMessage.firstIndex(of: ":")!
+    let shortErrorMessage = String(serverErrorMessage[..<splitIndex])
+      .trimmingCharacters(in: .whitespacesAndNewlines)
+    let serverDetailErrorMessage = String(serverErrorMessage[serverErrorMessage.index(after: splitIndex)...] ?? "")
       .trimmingCharacters(in: .whitespacesAndNewlines)
     switch shortErrorMessage {
     case "USER_NOT_FOUND": return AuthErrorUtils
